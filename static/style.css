@@ -22,18 +22,71 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 20px;
+    gap: 15px;
     margin-bottom: 20px;
     padding: 15px;
     background: rgba(255, 255, 255, 0.95);
     border-radius: 10px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    flex-wrap: wrap;
 }
 
 #game-status {
     font-size: 1.1em;
     font-weight: bold;
     color: #2c3e50;
+}
+
+.difficulty-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 8px 12px;
+    border-radius: 8px;
+}
+
+.difficulty-controls span {
+    font-weight: bold;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.difficulty-btn {
+    background: linear-gradient(135deg, #6c757d, #5a6268);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85em;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+}
+
+.difficulty-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+.difficulty-btn.active {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.4);
+}
+
+.difficulty-btn.active:hover {
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.5);
+}
+
+#show-last-move-btn {
+    background: linear-gradient(135deg, #fd7e14, #e55b13);
+    box-shadow: 0 4px 16px rgba(253, 126, 20, 0.3);
+    font-size: 0.9em;
+}
+
+#show-last-move-btn:hover {
+    box-shadow: 0 6px 20px rgba(253, 126, 20, 0.4);
 }
 
 .bottom-banner {
@@ -150,6 +203,27 @@ button:active {
     border-radius: 50%;
     background-color: #4CAF50;
     opacity: 0.7;
+}
+
+.square.last-move {
+    background-color: #ffeb3b !important;
+    box-shadow: inset 0 0 0 3px #ff9800;
+    animation: lastMoveHighlight 0.5s ease-in-out;
+}
+
+@keyframes lastMoveHighlight {
+    0% {
+        transform: scale(1);
+        box-shadow: inset 0 0 0 3px #ff9800;
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: inset 0 0 0 4px #ff9800, 0 0 10px rgba(255, 152, 0, 0.5);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: inset 0 0 0 3px #ff9800;
+    }
 }
 
 .piece {
@@ -274,6 +348,20 @@ button:active {
     .top-controls {
         flex-direction: column;
         gap: 10px;
+    }
+    
+    .difficulty-controls {
+        order: -1;
+    }
+    
+    .difficulty-btn {
+        padding: 8px 12px;
+        font-size: 0.8em;
+    }
+    
+    #show-last-move-btn {
+        font-size: 0.85em;
+        padding: 8px 16px;
     }
 }
 

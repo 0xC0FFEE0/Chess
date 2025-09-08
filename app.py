@@ -22,6 +22,8 @@ class ChessGame:
         self.stockfish = None
         self.game_over = False
         self.result = None
+        self.difficulty = 'intermediate'  # Default difficulty
+        self.last_move = None
         
     def initialize_stockfish(self, stockfish_path=None):
         """Initialize Stockfish engine with better error handling"""
@@ -59,7 +61,7 @@ class ChessGame:
                         self.stockfish = Stockfish(path=path)
                         # Test if Stockfish is working
                         test_move = self.stockfish.get_best_move_time(100)  # Quick test
-                        self.stockfish.set_depth(12)  # Reduced depth for better performance
+                        self.set_difficulty('intermediate')  # Set default difficulty
                         print("Stockfish initialized successfully!")
                         return True
                     except Exception as e:
@@ -91,6 +93,31 @@ class ChessGame:
             print(f"Stockfish initialization error: {e}")
             return False
     
+    def set_difficulty(self, difficulty):
+        """Set Stockfish difficulty level"""
+        self.difficulty = difficulty
+        
+        if not self.stockfish:
+            return False
+        
+        try:
+            if difficulty == 'beginner':
+                self.stockfish.set_depth(8)
+                self.stockfish.set_elo_rating(1200)
+            elif difficulty == 'intermediate':
+                self.stockfish.set_depth(12)
+                self.stockfish.set_elo_rating(1600)
+            elif difficulty == 'advanced':
+                self.stockfish.set_depth(18)
+                self.stockfish.set_elo_rating(2200)
+            
+            print(f"Difficulty set to: {difficulty}")
+            return True
+            
+        except Exception as e:
+            print(f"Error setting difficulty: {e}")
+            return False
+    
     def make_move(self, move_uci):
         """Make a move on the board"""
         try:
@@ -98,6 +125,7 @@ class ChessGame:
             if move in self.board.legal_moves:
                 self.board.push(move)
                 self.move_history.append(move_uci)
+                self.last_move = move_uci  # Track last move
                 
                 # Check for game over
                 if self.board.is_game_over():
@@ -131,7 +159,9 @@ class ChessGame:
             'game_over': self.game_over,
             'result': self.result,
             'in_check': self.board.is_check(),
-            'move_count': len(self.move_history)
+            'move_count': len(self.move_history),
+            'last_move': self.last_move,
+            'difficulty': self.difficulty
         }
 
 @app.route('/')
@@ -152,6 +182,27 @@ def new_game():
         'game_id': game_id,
         'board_state': games[game_id].get_board_state(),
         'stockfish_available': stockfish_initialized
+    })
+
+@app.route('/set_difficulty', methods=['POST'])
+def set_difficulty():
+    """Set game difficulty"""
+    data = request.get_json()
+    game_id = data.get('game_id')
+    difficulty = data.get('difficulty')
+    
+    if game_id not in games:
+        return jsonify({'error': 'Game not found'}), 404
+    
+    if difficulty not in ['beginner', 'intermediate', 'advanced']:
+        return jsonify({'error': 'Invalid difficulty'}), 400
+    
+    success = games[game_id].set_difficulty(difficulty)
+    
+    return jsonify({
+        'success': success,
+        'difficulty': difficulty,
+        'board_state': games[game_id].get_board_state()
     })
 
 @app.route('/move', methods=['POST'])

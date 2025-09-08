@@ -10,6 +10,13 @@
     <div class="container">
         <div class="top-controls">
             <button id="new-game-btn">New Game</button>
+            <div class="difficulty-controls">
+                <span>Difficulty:</span>
+                <button id="beginner-btn" class="difficulty-btn" data-difficulty="beginner">Beginner</button>
+                <button id="intermediate-btn" class="difficulty-btn active" data-difficulty="intermediate">Intermediate</button>
+                <button id="advanced-btn" class="difficulty-btn" data-difficulty="advanced">Advanced</button>
+            </div>
+            <button id="show-last-move-btn" style="display: none;">Show Last Move</button>
             <span id="game-status">Click "New Game" to start</span>
         </div>
 
@@ -87,6 +94,14 @@
 
             setupEventListeners() {
                 document.getElementById('new-game-btn').addEventListener('click', () => this.newGame());
+                
+                // Difficulty buttons
+                document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => this.setDifficulty(e.target.dataset.difficulty));
+                });
+                
+                // Show last move button
+                document.getElementById('show-last-move-btn').addEventListener('click', () => this.showLastMove());
             }
 
             async newGame() {
@@ -100,6 +115,10 @@
                     
                     document.getElementById('stockfish-status').textContent =
                         this.stockfishAvailable ? 'Ready' : 'Not Available';
+                    
+                    // Show last move button if game has moves
+                    document.getElementById('show-last-move-btn').style.display =
+                        data.board_state.move_count > 0 ? 'inline-block' : 'none';
                     
                 } catch (error) {
                     console.error('Error creating new game:', error);
@@ -133,15 +152,20 @@
                 
                 // Update move history
                 this.updateMoveHistory(boardState.move_history);
+                
+                // Update last move button visibility
+                document.getElementById('show-last-move-btn').style.display =
+                    boardState.move_count > 0 ? 'inline-block' : 'none';
             }
 
             placePiecesFromFen(fen) {
                 const [boardPart] = fen.split(' ');
                 const ranks = boardPart.split('/');
                 
+                // Consistent piece symbols (all filled/solid pieces)
                 const pieceSymbols = {
-                    'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
-                    'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+                    'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',  // White pieces
+                    'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'   // Black pieces
                 };
                 
                 ranks.forEach((rank, rankIndex) => {
@@ -261,6 +285,86 @@
                 }
             }
 
+            async setDifficulty(difficulty) {
+                if (!this.gameId || !this.stockfishAvailable) return;
+                
+                try {
+                    const response = await fetch('/set_difficulty', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ game_id: this.gameId, difficulty: difficulty })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Update active difficulty button
+                        document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                            btn.classList.remove('active');
+                        });
+                        document.querySelector(`[data-difficulty="${difficulty}"]`).classList.add('active');
+                        
+                        // Show confirmation
+                        const statusElement = document.getElementById('game-status');
+                        const originalText = statusElement.textContent;
+                        statusElement.textContent = `Difficulty set to ${difficulty}`;
+                        setTimeout(() => {
+                            statusElement.textContent = originalText;
+                        }, 2000);
+                    }
+                } catch (error) {
+                    console.error('Error setting difficulty:', error);
+                    alert('Failed to set difficulty');
+                }
+            }
+
+            showLastMove() {
+                if (!this.gameId) return;
+                
+                try {
+                    // Clear existing highlights
+                    this.clearHighlights();
+                    
+                    // Get the last move from move history
+                    const moves = document.querySelectorAll('#moves-list .move-pair');
+                    if (moves.length === 0) return;
+                    
+                    const lastMoveElement = moves[moves.length - 1];
+                    const moveSpans = lastMoveElement.querySelectorAll('.white-move, .black-move');
+                    
+                    // Get the actual last move text
+                    let lastMoveText = '';
+                    for (let i = moveSpans.length - 1; i >= 0; i--) {
+                        if (moveSpans[i].textContent.trim()) {
+                            lastMoveText = moveSpans[i].textContent.trim();
+                            break;
+                        }
+                    }
+                    
+                    if (lastMoveText && lastMoveText.length >= 4) {
+                        // Extract from and to squares (e.g., "e2e4" -> from="e2", to="e4")
+                        const fromSquare = lastMoveText.substring(0, 2);
+                        const toSquare = lastMoveText.substring(2, 4);
+                        
+                        // Highlight the last move
+                        const fromElement = document.querySelector(`[data-square="${fromSquare}"]`);
+                        const toElement = document.querySelector(`[data-square="${toSquare}"]`);
+                        
+                        if (fromElement && toElement) {
+                            fromElement.classList.add('last-move');
+                            toElement.classList.add('last-move');
+                            
+                            // Remove highlighting after 3 seconds
+                            setTimeout(() => {
+                                fromElement.classList.remove('last-move');
+                                toElement.classList.remove('last-move');
+                            }, 3000);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error showing last move:', error);
+                }
+            }
         }
 
         // Initialize the chess app when page loads
