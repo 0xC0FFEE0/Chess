@@ -24,31 +24,71 @@ class ChessGame:
         self.result = None
         
     def initialize_stockfish(self, stockfish_path=None):
-        """Initialize Stockfish engine"""
+        """Initialize Stockfish engine with better error handling"""
+        print("Attempting to initialize Stockfish...")
+        
         try:
             # Try to find Stockfish binary
             possible_paths = [
                 stockfish_path,
                 "stockfish",
+                "stockfish.exe",
                 "/usr/bin/stockfish",
                 "/usr/local/bin/stockfish",
-                "C:/Program Files/Stockfish/bin/stockfish.exe",
-                "./stockfish.exe"
+                "/opt/homebrew/bin/stockfish",  # macOS Homebrew ARM
+                "/usr/local/Cellar/stockfish/*/bin/stockfish",  # macOS Homebrew Intel
+                "C:/Program Files/Stockfish/stockfish.exe",
+                "C:/stockfish/stockfish.exe",
+                "./stockfish.exe",
+                "./stockfish"
             ]
             
-            for path in possible_paths:
-                if path and os.path.exists(path):
-                    self.stockfish = Stockfish(path=path)
-                    self.stockfish.set_depth(15)
-                    return True
+            print(f"Checking {len(possible_paths)} possible Stockfish locations...")
             
-            # If no path found, try default
-            self.stockfish = Stockfish()
-            self.stockfish.set_depth(15)
-            return True
+            for path in possible_paths:
+                if path and "*" in path:
+                    # Handle glob patterns for Homebrew
+                    import glob
+                    matches = glob.glob(path)
+                    if matches:
+                        path = matches[0]
+                
+                if path and os.path.exists(path):
+                    print(f"Found Stockfish at: {path}")
+                    try:
+                        self.stockfish = Stockfish(path=path)
+                        # Test if Stockfish is working
+                        test_move = self.stockfish.get_best_move_time(100)  # Quick test
+                        self.stockfish.set_depth(12)  # Reduced depth for better performance
+                        print("Stockfish initialized successfully!")
+                        return True
+                    except Exception as e:
+                        print(f"Failed to initialize Stockfish at {path}: {e}")
+                        continue
+            
+            # Try default initialization without path
+            print("Trying default Stockfish initialization...")
+            try:
+                self.stockfish = Stockfish()
+                # Test if it works
+                self.stockfish.set_fen_position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+                test_move = self.stockfish.get_best_move()
+                if test_move:
+                    self.stockfish.set_depth(12)
+                    print("Stockfish initialized with default settings!")
+                    return True
+            except Exception as e:
+                print(f"Default Stockfish initialization failed: {e}")
+            
+            print("ERROR: Could not initialize Stockfish. Please ensure it's installed.")
+            print("Installation instructions:")
+            print("  Windows: Download from https://stockfishchess.org/download/")
+            print("  Linux: sudo apt-get install stockfish")
+            print("  macOS: brew install stockfish")
+            return False
             
         except Exception as e:
-            print(f"Failed to initialize Stockfish: {e}")
+            print(f"Stockfish initialization error: {e}")
             return False
     
     def make_move(self, move_uci):

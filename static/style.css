@@ -18,45 +18,38 @@ body {
     padding: 20px;
 }
 
-header {
-    text-align: center;
-    margin-bottom: 30px;
-    background: rgba(255, 255, 255, 0.95);
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-header h1 {
-    color: #2c3e50;
-    margin-bottom: 15px;
-    font-size: 2.5em;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.game-info {
+.top-controls {
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 20px;
-    flex-wrap: wrap;
-}
-
-.status {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 #game-status {
-    font-size: 1.2em;
+    font-size: 1.1em;
     font-weight: bold;
     color: #2c3e50;
 }
 
-#turn-indicator {
-    font-size: 0.9em;
-    color: #666;
+.bottom-banner {
+    text-align: center;
+    margin-top: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.bottom-banner h2 {
+    color: #2c3e50;
+    font-size: 1.8em;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+    margin: 0;
 }
 
 button {
@@ -81,14 +74,6 @@ button:active {
     transform: translateY(0);
 }
 
-#hint-btn {
-    background: linear-gradient(135deg, #2196F3, #1976D2);
-    box-shadow: 0 4px 16px rgba(33, 150, 243, 0.3);
-}
-
-#hint-btn:hover {
-    box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
-}
 
 .game-container {
     display: flex;
@@ -96,6 +81,7 @@ button:active {
     justify-content: center;
     align-items: flex-start;
     flex-wrap: wrap;
+    height: 75vh;
 }
 
 .board-container {
@@ -103,27 +89,35 @@ button:active {
     padding: 20px;
     border-radius: 15px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 #chess-board {
     display: grid;
-    grid-template-columns: repeat(8, 60px);
-    grid-template-rows: repeat(8, 60px);
+    grid-template-columns: repeat(8, min(8vw, 80px));
+    grid-template-rows: repeat(8, min(8vw, 80px));
     border: 3px solid #8B4513;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    max-width: 640px;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
 }
 
 .square {
-    width: 60px;
-    height: 60px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     position: relative;
     transition: all 0.2s ease;
+    aspect-ratio: 1;
 }
 
 .square.light {
@@ -159,30 +153,21 @@ button:active {
 }
 
 .piece {
-    font-size: 45px;
+    font-size: min(6vw, 60px);
     line-height: 1;
     user-select: none;
     pointer-events: none;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.board-notation {
-    margin-top: 10px;
-    text-align: center;
-}
-
-.files {
-    font-weight: bold;
-    letter-spacing: 28px;
-    padding-left: 28px;
-    color: #8B4513;
-}
-
 .sidebar {
     min-width: 300px;
+    max-width: 350px;
     display: flex;
     flex-direction: column;
     gap: 20px;
+    flex: 1;
+    height: 100%;
 }
 
 .game-panel, .move-history {
@@ -259,25 +244,22 @@ button:active {
     .game-container {
         flex-direction: column;
         align-items: center;
+        height: auto;
+    }
+    
+    .board-container {
+        flex: none;
+        width: 100%;
+        max-width: 400px;
     }
     
     #chess-board {
-        grid-template-columns: repeat(8, 45px);
-        grid-template-rows: repeat(8, 45px);
-    }
-    
-    .square {
-        width: 45px;
-        height: 45px;
+        grid-template-columns: repeat(8, min(10vw, 45px));
+        grid-template-rows: repeat(8, min(10vw, 45px));
     }
     
     .piece {
-        font-size: 32px;
-    }
-    
-    .files {
-        letter-spacing: 21px;
-        padding-left: 21px;
+        font-size: min(8vw, 32px);
     }
     
     .sidebar {
@@ -285,13 +267,13 @@ button:active {
         max-width: 400px;
     }
     
-    header h1 {
-        font-size: 2em;
+    .bottom-banner h2 {
+        font-size: 1.4em;
     }
     
-    .game-info {
+    .top-controls {
         flex-direction: column;
-        gap: 15px;
+        gap: 10px;
     }
 }
 

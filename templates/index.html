@@ -8,25 +8,15 @@
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>♛ Chess Web App ♛</h1>
-            <div class="game-info">
-                <div class="status">
-                    <span id="game-status">Click "New Game" to start</span>
-                    <span id="turn-indicator"></span>
-                </div>
-                <button id="new-game-btn">New Game</button>
-                <button id="hint-btn" style="display: none;">Get Hint</button>
-            </div>
-        </header>
+        <div class="top-controls">
+            <button id="new-game-btn">New Game</button>
+            <span id="game-status">Click "New Game" to start</span>
+        </div>
 
         <main class="game-container">
             <div class="board-container">
                 <div id="chess-board">
                     <!-- Chess board will be generated here -->
-                </div>
-                <div class="board-notation">
-                    <div class="files">a b c d e f g h</div>
                 </div>
             </div>
 
@@ -55,6 +45,10 @@
                 </div>
             </div>
         </main>
+
+        <footer class="bottom-banner">
+            <h2>♛ Chess Web App ♛</h2>
+        </footer>
     </div>
 
     <script>
@@ -93,7 +87,6 @@
 
             setupEventListeners() {
                 document.getElementById('new-game-btn').addEventListener('click', () => this.newGame());
-                document.getElementById('hint-btn').addEventListener('click', () => this.getHint());
             }
 
             async newGame() {
@@ -105,10 +98,8 @@
                     this.stockfishAvailable = data.stockfish_available;
                     this.updateBoard(data.board_state);
                     
-                    document.getElementById('stockfish-status').textContent = 
+                    document.getElementById('stockfish-status').textContent =
                         this.stockfishAvailable ? 'Ready' : 'Not Available';
-                    document.getElementById('hint-btn').style.display = 
-                        this.stockfishAvailable ? 'inline-block' : 'none';
                     
                 } catch (error) {
                     console.error('Error creating new game:', error);
@@ -270,28 +261,6 @@
                 }
             }
 
-            async getHint() {
-                if (!this.stockfishAvailable || this.gameOver) return;
-                
-                try {
-                    const response = await fetch('/stockfish_move', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ game_id: this.gameId })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.move) {
-                        alert(`Stockfish suggests: ${data.move}`);
-                    } else {
-                        alert('No suggestion available');
-                    }
-                } catch (error) {
-                    console.error('Error getting hint:', error);
-                    alert('Failed to get hint');
-                }
-            }
         }
 
         // Initialize the chess app when page loads

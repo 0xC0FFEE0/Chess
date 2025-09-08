@@ -48,10 +48,17 @@ Perfect for chess enthusiasts who want a self-hosted, ad-free chess experience w
 
 3. **Install Stockfish**:
    
+   **Easy Installation (Recommended):**
+   ```bash
+   python install_stockfish.py
+   ```
+   
+   **Manual Installation:**
+   
    **On Windows:**
    - Download from [Stockfish Official Site](https://stockfishchess.org/download/)
    - Extract and place `stockfish.exe` in the project directory, or
-   - Install to `C:\Program Files\Stockfish\bin\stockfish.exe`
+   - Install to `C:\Program Files\Stockfish\stockfish.exe`
 
    **On Linux:**
    ```bash
