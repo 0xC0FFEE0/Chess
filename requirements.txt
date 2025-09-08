@@ -1,0 +1,5 @@
+Flask==2.3.3
+python-chess==1.999
+stockfish==3.28.0
+flask-socketio==5.3.6
+python-socketio==5.8.0

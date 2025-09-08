@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Web App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>♛ Chess Web App ♛</h1>
+            <div class="game-info">
+                <div class="status">
+                    <span id="game-status">Click "New Game" to start</span>
+                    <span id="turn-indicator"></span>
+                </div>
+                <button id="new-game-btn">New Game</button>
+                <button id="hint-btn" style="display: none;">Get Hint</button>
+            </div>
+        </header>
+
+        <main class="game-container">
+            <div class="board-container">
+                <div id="chess-board">
+                    <!-- Chess board will be generated here -->
+                </div>
+                <div class="board-notation">
+                    <div class="files">a b c d e f g h</div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="game-panel">
+                    <h3>Game Info</h3>
+                    <div class="info-item">
+                        <span>Move:</span>
+                        <span id="move-count">0</span>
+                    </div>
+                    <div class="info-item">
+                        <span>Status:</span>
+                        <span id="check-status">Normal</span>
+                    </div>
+                    <div class="info-item">
+                        <span>Stockfish:</span>
+                        <span id="stockfish-status">Loading...</span>
+                    </div>
+                </div>
+
+                <div class="move-history">
+                    <h3>Move History</h3>
+                    <div id="moves-list">
+                        <!-- Move history will appear here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        class ChessApp {
+            constructor() {
+                this.gameId = null;
+                this.currentFen = null;
+                this.selectedSquare = null;
+                this.legalMoves = [];
+                this.gameOver = false;
+                this.stockfishAvailable = false;
+                
+                this.initializeBoard();
+                this.setupEventListeners();
+            }
+
+            initializeBoard() {
+                const board = document.getElementById('chess-board');
+                board.innerHTML = '';
+                
+                // Create 8x8 board
+                for (let rank = 8; rank >= 1; rank--) {
+                    for (let file = 0; file < 8; file++) {
+                        const square = document.createElement('div');
+                        const fileName = String.fromCharCode(97 + file); // a-h
+                        const squareName = fileName + rank;
+                        
+                        square.className = 'square ' + ((rank + file) % 2 === 0 ? 'dark' : 'light');
+                        square.dataset.square = squareName;
+                        square.addEventListener('click', (e) => this.handleSquareClick(e));
+                        
+                        board.appendChild(square);
+                    }
+                }
+            }
+
+            setupEventListeners() {
+                document.getElementById('new-game-btn').addEventListener('click', () => this.newGame());
+                document.getElementById('hint-btn').addEventListener('click', () => this.getHint());
+            }
+
+            async newGame() {
+                try {
+                    const response = await fetch('/new_game', { method: 'POST' });
+                    const data = await response.json();
+                    
+                    this.gameId = data.game_id;
+                    this.stockfishAvailable = data.stockfish_available;
+                    this.updateBoard(data.board_state);
+                    
+                    document.getElementById('stockfish-status').textContent = 
+                        this.stockfishAvailable ? 'Ready' : 'Not Available';
+                    document.getElementById('hint-btn').style.display = 
+                        this.stockfishAvailable ? 'inline-block' : 'none';
+                    
+                } catch (error) {
+                    console.error('Error creating new game:', error);
+                    alert('Failed to create new game');
+                }
+            }
+
+            updateBoard(boardState) {
+                this.currentFen = boardState.fen;
+                this.legalMoves = boardState.legal_moves;
+                this.gameOver = boardState.game_over;
+                
+                // Clear board
+                document.querySelectorAll('.square').forEach(square => {
+                    square.innerHTML = '';
+                    square.classList.remove('selected', 'legal-move', 'last-move');
+                });
+                
+                // Place pieces based on FEN
+                this.placePiecesFromFen(boardState.fen);
+                
+                // Update status
+                const status = boardState.game_over ? 
+                    `Game Over: ${boardState.result}` : 
+                    `${boardState.turn}'s turn`;
+                document.getElementById('game-status').textContent = status;
+                
+                document.getElementById('move-count').textContent = boardState.move_count;
+                document.getElementById('check-status').textContent = 
+                    boardState.in_check ? 'Check!' : 'Normal';
+                
+                // Update move history
+                this.updateMoveHistory(boardState.move_history);
+            }
+
+            placePiecesFromFen(fen) {
+                const [boardPart] = fen.split(' ');
+                const ranks = boardPart.split('/');
+                
+                const pieceSymbols = {
+                    'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
+                    'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+                };
+                
+                ranks.forEach((rank, rankIndex) => {
+                    let fileIndex = 0;
+                    for (let char of rank) {
+                        if (isNaN(char)) {
+                            const fileName = String.fromCharCode(97 + fileIndex);
+                            const squareName = fileName + (8 - rankIndex);
+                            const square = document.querySelector(`[data-square="${squareName}"]`);
+                            if (square) {
+                                const piece = document.createElement('div');
+                                piece.className = 'piece';
+                                piece.textContent = pieceSymbols[char];
+                                piece.dataset.piece = char;
+                                square.appendChild(piece);
+                            }
+                            fileIndex++;
+                        } else {
+                            fileIndex += parseInt(char);
+                        }
+                    }
+                });
+            }
+
+            handleSquareClick(event) {
+                if (this.gameOver) return;
+                
+                const square = event.currentTarget;
+                const squareName = square.dataset.square;
+                
+                if (this.selectedSquare === squareName) {
+                    // Deselect
+                    this.selectedSquare = null;
+                    this.clearHighlights();
+                } else if (this.selectedSquare && this.isLegalMove(this.selectedSquare, squareName)) {
+                    // Make move
+                    this.makeMove(this.selectedSquare + squareName);
+                } else {
+                    // Select new square
+                    this.selectedSquare = squareName;
+                    this.highlightLegalMoves(squareName);
+                }
+            }
+
+            isLegalMove(from, to) {
+                const moveUci = from + to;
+                return this.legalMoves.some(move => move.startsWith(moveUci));
+            }
+
+            async makeMove(moveUci) {
+                try {
+                    const response = await fetch('/move', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ game_id: this.gameId, move: moveUci })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.updateBoard(data.board_state);
+                        this.selectedSquare = null;
+                        this.clearHighlights();
+                        
+                        // Show Stockfish move if available
+                        if (data.stockfish_move) {
+                            setTimeout(() => {
+                                document.getElementById('game-status').textContent += 
+                                    ` (Stockfish played: ${data.stockfish_move})`;
+                            }, 500);
+                        }
+                    } else {
+                        alert('Invalid move!');
+                    }
+                } catch (error) {
+                    console.error('Error making move:', error);
+                    alert('Failed to make move');
+                }
+            }
+
+            highlightLegalMoves(fromSquare) {
+                this.clearHighlights();
+                
+                document.querySelector(`[data-square="${fromSquare}"]`).classList.add('selected');
+                
+                this.legalMoves.forEach(move => {
+                    if (move.startsWith(fromSquare)) {
+                        const toSquare = move.substring(2, 4);
+                        document.querySelector(`[data-square="${toSquare}"]`).classList.add('legal-move');
+                    }
+                });
+            }
+
+            clearHighlights() {
+                document.querySelectorAll('.square').forEach(square => {
+                    square.classList.remove('selected', 'legal-move');
+                });
+            }
+
+            updateMoveHistory(moves) {
+                const movesList = document.getElementById('moves-list');
+                movesList.innerHTML = '';
+                
+                for (let i = 0; i < moves.length; i += 2) {
+                    const moveNumber = Math.floor(i / 2) + 1;
+                    const whiteMove = moves[i];
+                    const blackMove = moves[i + 1] || '';
+                    
+                    const moveDiv = document.createElement('div');
+                    moveDiv.className = 'move-pair';
+                    moveDiv.innerHTML = `
+                        <span class="move-number">${moveNumber}.</span>
+                        <span class="white-move">${whiteMove}</span>
+                        <span class="black-move">${blackMove}</span>
+                    `;
+                    movesList.appendChild(moveDiv);
+                }
+            }
+
+            async getHint() {
+                if (!this.stockfishAvailable || this.gameOver) return;
+                
+                try {
+                    const response = await fetch('/stockfish_move', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ game_id: this.gameId })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.move) {
+                        alert(`Stockfish suggests: ${data.move}`);
+                    } else {
+                        alert('No suggestion available');
+                    }
+                } catch (error) {
+                    console.error('Error getting hint:', error);
+                    alert('Failed to get hint');
+                }
+            }
+        }
+
+        // Initialize the chess app when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new ChessApp();
+        });
+    </script>
+</body>
+</html>
