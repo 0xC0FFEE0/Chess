@@ -201,13 +201,75 @@
                     this.selectedSquare = null;
                     this.clearHighlights();
                 } else if (this.selectedSquare && this.isLegalMove(this.selectedSquare, squareName)) {
-                    // Make move
-                    this.makeMove(this.selectedSquare + squareName);
+                    // Check if this is a pawn promotion
+                    if (this.isPawnPromotion(this.selectedSquare, squareName)) {
+                        this.handlePawnPromotion(this.selectedSquare, squareName);
+                    } else {
+                        // Make regular move
+                        this.makeMove(this.selectedSquare + squareName);
+                    }
                 } else {
                     // Select new square
                     this.selectedSquare = squareName;
                     this.highlightLegalMoves(squareName);
                 }
+            }
+
+            isPawnPromotion(from, to) {
+                // Check if this is a pawn promotion move
+                const fromSquare = document.querySelector(`[data-square="${from}"]`);
+                const piece = fromSquare.querySelector('.piece');
+                
+                if (!piece) return false;
+                
+                const pieceType = piece.dataset.piece;
+                const isWhitePawn = pieceType === 'P';
+                const isBlackPawn = pieceType === 'p';
+                
+                if (!isWhitePawn && !isBlackPawn) return false;
+                
+                const toRank = parseInt(to[1]);
+                
+                // White pawn reaching rank 8 or black pawn reaching rank 1
+                return (isWhitePawn && toRank === 8) || (isBlackPawn && toRank === 1);
+            }
+
+            handlePawnPromotion(from, to) {
+                // Create promotion dialog
+                const promotionOptions = [
+                    { piece: 'q', symbol: '♕', name: 'Queen' },
+                    { piece: 'r', symbol: '♖', name: 'Rook' },
+                    { piece: 'b', symbol: '♗', name: 'Bishop' },
+                    { piece: 'n', symbol: '♘', name: 'Knight' }
+                ];
+
+                // Simple prompt for now (could be enhanced with a modal)
+                const choice = prompt(
+                    'Promote pawn to:\n' +
+                    '1 - Queen ♕\n' +
+                    '2 - Rook ♖\n' +
+                    '3 - Bishop ♗\n' +
+                    '4 - Knight ♘\n' +
+                    'Enter 1-4 (default: Queen):'
+                );
+
+                let promotionPiece = 'q'; // Default to queen
+                
+                if (choice === '1' || choice === '' || choice === null) {
+                    promotionPiece = 'q';
+                } else if (choice === '2') {
+                    promotionPiece = 'r';
+                } else if (choice === '3') {
+                    promotionPiece = 'b';
+                } else if (choice === '4') {
+                    promotionPiece = 'n';
+                } else {
+                    // Invalid choice, default to queen
+                    promotionPiece = 'q';
+                }
+
+                // Make the move with promotion
+                this.makeMove(from + to + promotionPiece);
             }
 
             isLegalMove(from, to) {
