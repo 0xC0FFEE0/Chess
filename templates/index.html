@@ -217,11 +217,21 @@
 
             async makeMove(moveUci) {
                 try {
+                    // Show loading indicator for advanced difficulty
+                    const originalStatus = document.getElementById('game-status').textContent;
+                    if (this.gameId) {
+                        document.getElementById('game-status').textContent = 'Processing move...';
+                    }
+
                     const response = await fetch('/move', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ game_id: this.gameId, move: moveUci })
                     });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
                     
                     const data = await response.json();
                     
@@ -233,16 +243,25 @@
                         // Show Stockfish move if available
                         if (data.stockfish_move) {
                             setTimeout(() => {
-                                document.getElementById('game-status').textContent += 
-                                    ` (Stockfish played: ${data.stockfish_move})`;
+                                const currentStatus = document.getElementById('game-status').textContent;
+                                if (!currentStatus.includes('Stockfish played')) {
+                                    document.getElementById('game-status').textContent +=
+                                        ` (Stockfish: ${data.stockfish_move})`;
+                                }
                             }, 500);
                         }
                     } else {
-                        alert('Invalid move!');
+                        console.error('Move validation failed:', data.error);
+                        document.getElementById('game-status').textContent = originalStatus;
+                        alert(data.error || 'Invalid move!');
                     }
                 } catch (error) {
                     console.error('Error making move:', error);
-                    alert('Failed to make move');
+                    document.getElementById('game-status').textContent = 'Error occurred - please try again';
+                    setTimeout(() => {
+                        document.getElementById('game-status').textContent =
+                            this.gameOver ? 'Game Over' : `${this.currentFen ? (this.currentFen.split(' ')[1] === 'w' ? "White's" : "Black's") : "Your"} turn`;
+                    }, 2000);
                 }
             }
 

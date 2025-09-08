@@ -102,16 +102,14 @@ class ChessGame:
         
         try:
             if difficulty == 'beginner':
-                self.stockfish.set_depth(8)
-                self.stockfish.set_elo_rating(1200)
+                self.stockfish.set_depth(6)
+                # Use time limit for more consistent response times
             elif difficulty == 'intermediate':
-                self.stockfish.set_depth(12)
-                self.stockfish.set_elo_rating(1600)
+                self.stockfish.set_depth(10)
             elif difficulty == 'advanced':
-                self.stockfish.set_depth(18)
-                self.stockfish.set_elo_rating(2200)
+                self.stockfish.set_depth(15)  # Reduced from 18 for better performance
             
-            print(f"Difficulty set to: {difficulty}")
+            print(f"Difficulty set to: {difficulty} (depth: {self.stockfish.get_depth()})")
             return True
             
         except Exception as e:
@@ -138,15 +136,26 @@ class ChessGame:
             return False
     
     def get_stockfish_move(self):
-        """Get best move from Stockfish"""
+        """Get best move from Stockfish with timeout handling"""
         if not self.stockfish or self.game_over:
             return None
         
         try:
             self.stockfish.set_fen_position(self.board.fen())
-            best_move = self.stockfish.get_best_move()
+            
+            # Use time-limited search for more consistent performance
+            if self.difficulty == 'beginner':
+                best_move = self.stockfish.get_best_move_time(500)  # 0.5 seconds
+            elif self.difficulty == 'intermediate':
+                best_move = self.stockfish.get_best_move_time(2000)  # 2 seconds
+            else:  # advanced
+                best_move = self.stockfish.get_best_move_time(5000)  # 5 seconds max
+                
+            print(f"Stockfish move ({self.difficulty}): {best_move}")
             return best_move
-        except:
+            
+        except Exception as e:
+            print(f"Error getting Stockfish move: {e}")
             return None
     
     def get_board_state(self):
